@@ -42,59 +42,7 @@
 
 # # Read XML configuration from file
 # with open('config_pipe_xml', 'r') as file:
-#     pipeline_config = file.read().format(GITHUB_REPO=GITHUB_REPO)
-
-# # Create Jenkins server connection with username and password using the URL
-# try:
-#     server = jenkins.Jenkins(JENKINS_URL, username=JENKINS_USER, password=JENKINS_PASSWORD)
-
-#     if server.job_exists(JOB_NAME):  # Checks if the job exists with that name 
-#         server.delete_job(JOB_NAME)  # If it exists, it will delete
-
-#     server.create_job(JOB_NAME, pipeline_config)
-
-#     print(f"Pipeline job '{JOB_NAME}' created successfully.")
-
-# except jenkins.JenkinsException as e:
-#     print(f"Failed to create pipeline job: {e}")
-
-# # Setup GitHub webhook, makes API call to check if webhook already exists or not
-# try:
-#     headers = {
-#         'Content-Type': 'application/json',
-#         'Authorization': f'token {GITHUB_TOKEN}',
-#     }
-#     response = requests.get(f'https://api.github.com/repos/{repo_owner}/{repo_name}/hooks', headers=headers)
-    
-#     existing_webhook = False
-#     if response.status_code == 200:
-#         hooks = response.json()
-#         for hook in hooks:
-#             if hook['config']['url'] == f'{JENKINS_URL}/github-webhook/':  # Checks if the webhook URL matches the Jenkins webhook URL
-#                 existing_webhook = True
-#                 break
-
-#     if not existing_webhook:
-#         data = {
-#             'name': 'web',
-#             'active': True,
-#             'events': ['push'],
-#             'config': {
-#                 'url': f'{JENKINS_URL}/github-webhook/',
-#                 'content_type': 'json',
-#             }
-#         }
-#         response = requests.post(f'https://api.github.com/repos/{repo_owner}/{repo_name}/hooks', headers=headers, json=data)
-#         if response.status_code == 201:
-#             print("GitHub webhook created successfully.")
-#         else:
-#             print(f"Failed to create GitHub webhook: {response.json()}")
-#     else:
-#         print("GitHub webhook already exists.")
-
-# except requests.RequestException as e:
-#     print(f"Failed to create GitHub webhook: {e}")
-
+#     pipeline_config = file.read().format
 
 import jenkins
 import requests
@@ -109,10 +57,10 @@ print(f"sys.argv: {sys.argv}")
 load_dotenv()
 
 # Fetch environment variables
-JENKINS_URL = os.getenv('JENKINS_URL', sys.argv[5])
-JENKINS_USER = os.getenv('JENKINS_USER', sys.argv[6])
-JENKINS_PASSWORD = os.getenv('JENKINS_PASSWORD', sys.argv[7])
-GITHUB_TOKEN = os.getenv('GITHUB_TOKEN', sys.argv[8])
+JENKINS_URL = os.getenv('JENKINS_URL')
+JENKINS_USER = os.getenv('JENKINS_USER')
+JENKINS_PASSWORD = os.getenv('JENKINS_PASSWORD')
+GITHUB_TOKEN = os.getenv('GITHUB_TOKEN')
 
 # This owner name will be used to create the full GitHub repository URL later for webhooks
 GITHUB_OWNER = 'iriska09'
@@ -140,4 +88,55 @@ repo_name = repo_parts[-1].replace('.git', '')
 
 # Read XML configuration from file
 with open('config_pipe_xml', 'r') as file:
-    pipeline_config = file.read().format
+    pipeline_config = file.read().format(GITHUB_REPO=GITHUB_REPO)
+
+# Create Jenkins server connection with username and password using the URL
+try:
+    server = jenkins.Jenkins(JENKINS_URL, username=JENKINS_USER, password=JENKINS_PASSWORD)
+
+    if server.job_exists(JOB_NAME):  # Checks if the job exists with that name 
+        server.delete_job(JOB_NAME)  # If it exists, it will delete
+
+    server.create_job(JOB_NAME, pipeline_config)
+
+    print(f"Pipeline job '{JOB_NAME}' created successfully.")
+
+except jenkins.JenkinsException as e:
+    print(f"Failed to create pipeline job: {e}")
+
+# Setup GitHub webhook, makes API call to check if webhook already exists or not
+try:
+    headers = {
+        'Content-Type': 'application/json',
+        'Authorization': f'token {GITHUB_TOKEN}',
+    }
+    response = requests.get(f'https://api.github.com/repos/{repo_owner}/{repo_name}/hooks', headers=headers)
+    
+    existing_webhook = False
+    if response.status_code == 200:
+        hooks = response.json()
+        for hook in hooks:
+            if hook['config']['url'] == f'{JENKINS_URL}/github-webhook/':  # Checks if the webhook URL matches the Jenkins webhook URL
+                existing_webhook = True
+                break
+
+    if not existing_webhook:
+        data = {
+            'name': 'web',
+            'active': True,
+            'events': ['push'],
+            'config': {
+                'url': f'{JENKINS_URL}/github-webhook/',
+                'content_type': 'json',
+            }
+        }
+        response = requests.post(f'https://api.github.com/repos/{repo_owner}/{repo_name}/hooks', headers=headers, json=data)
+        if response.status_code == 201:
+            print("GitHub webhook created successfully.")
+        else:
+            print(f"Failed to create GitHub webhook: {response.json()}")
+    else:
+        print("GitHub webhook already exists.")
+
+except requests.RequestException as e:
+    print(f"Failed to create GitHub webhook: {e}")
